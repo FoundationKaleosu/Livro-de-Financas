@@ -1,3 +1,4 @@
+<!-- SEU CÓDIGO COMPLETO, INCLUINDO A ADAPTAÇÃO PARA CELULAR -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -142,6 +143,31 @@
       .container {
         width: 100%;
       }
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+      thead {
+        display: none;
+      }
+      tr {
+        margin-bottom: 15px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px;
+        background-color: var(--table-bg);
+      }
+      td {
+        padding: 6px 10px;
+        text-align: left;
+        position: relative;
+      }
+      td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        display: block;
+        color: var(--fg);
+        margin-bottom: 4px;
+      }
     }
   </style>
 </head>
@@ -218,7 +244,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <script>
-    // Config Firebase (substitua com o seu config)
     const firebaseConfig = {
       apiKey: "AIzaSyAKjavNwXaaNigtooZFaPF7-FyWg7qzGeI",
       authDomain: "livro-de-financas.firebaseapp.com",
@@ -296,15 +321,12 @@
       }
 
       const id = Date.now().toString();
-
       lancamentos[id] = { data, descricao, tipo, valor, pago };
       salvarLancamentos();
       renderizarTabela();
 
-      // Limpa campos
       document.getElementById("descricao").value = "";
       document.getElementById("valor").value = "";
-      // Mantém data e filtros para facilitar adicionar vários
     }
 
     function removerLancamento(key) {
@@ -319,7 +341,6 @@
       const atual = lancamentos[key].pago;
       if (atual === "sim") lancamentos[key].pago = "nao";
       else if (atual === "nao") lancamentos[key].pago = "sim";
-      // Não altera se for ***
       salvarLancamentos();
       renderizarTabela();
     }
@@ -334,22 +355,19 @@
 
       arr.forEach(l => {
         const valorNum = Number(l.valor);
-        if (isNaN(valorNum)) {
-          console.warn("Valor inválido no lançamento:", l);
-          return; // pula lançamento com valor inválido
-        }
+        if (isNaN(valorNum)) return;
 
         const linha = document.createElement("tr");
         linha.innerHTML = `
-          <td>${l.data}</td>
-          <td>${l.descricao}</td>
-          <td class="${l.tipo === 'entrada' ? 'entrada' : 'saida'}">${l.tipo.charAt(0).toUpperCase() + l.tipo.slice(1)}</td>
-          <td class="${l.tipo === 'entrada' ? 'entrada' : 'saida'}">${formatar(valorNum)}</td>
-          <td class="${l.pago === 'sim' ? 'pago-sim' : l.pago === 'nao' ? 'pago-nao' : 'pago-ignorar'}">
+          <td data-label="Data">${l.data}</td>
+          <td data-label="Descrição">${l.descricao}</td>
+          <td data-label="Tipo" class="${l.tipo === 'entrada' ? 'entrada' : 'saida'}">${l.tipo.charAt(0).toUpperCase() + l.tipo.slice(1)}</td>
+          <td data-label="Valor (R$)" class="${l.tipo === 'entrada' ? 'entrada' : 'saida'}">${formatar(valorNum)}</td>
+          <td data-label="Pago" class="${l.pago === 'sim' ? 'pago-sim' : l.pago === 'nao' ? 'pago-nao' : 'pago-ignorar'}">
             ${l.pago === '***' ? '***' : l.pago === 'sim' ? 'Sim' : 'Não'}
             ${l.pago !== '***' ? `<button class="botao-toggle-pago" aria-label="Alternar pago/não pago" onclick="togglePago('${l.key}')">🔁</button>` : ''}
           </td>
-          <td><button class="botao-remover" aria-label="Remover lançamento" onclick="removerLancamento('${l.key}')">🗑️</button></td>
+          <td data-label="Ações"><button class="botao-remover" aria-label="Remover lançamento" onclick="removerLancamento('${l.key}')">🗑️</button></td>
         `;
         tbody.appendChild(linha);
 
@@ -359,19 +377,14 @@
         }
       });
 
-      console.log("Totais calculados:", { totalEntradas, totalSaidas });
-
       totalEntradasEl.textContent = formatar(totalEntradas);
       totalSaidasEl.textContent = formatar(totalSaidas);
       saldoFinalEl.textContent = formatar(totalEntradas - totalSaidas);
     }
 
-    // Inicializa filtro com mês e ano atual
     const hoje = new Date();
     filtroMesEl.value = (hoje.getMonth() + 1).toString().padStart(2, "0");
     filtroAnoEl.value = hoje.getFullYear();
-
-    // Carrega dados ao iniciar página
     carregarLancamentos();
   </script>
 </body>
