@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Livro de Finanças - Firebase Realtime DB</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --fg: #ffffff;
+      --table-bg: #1e1e1e;
+      --border: #333;
+      --entrada: #00e676;
+      --saida: #ff5252;
+      --highlight: #292929;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--fg);
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--table-bg);
+      margin-bottom: 20px;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background: var(--highlight);
+    }
+
+    tfoot td {
+      font-weight: bold;
+      background: var(--highlight);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border: none;
+      border-radius: 4px;
+      background: #2c2c2c;
+      color: var(--fg);
+    }
+
+    .form-row, .filtros {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .form-row > *, .filtros > * {
+      flex: 1 1 150px;
+    }
+
+    button {
+      padding: 10px;
+      cursor: pointer;
+      background-color: #00bfa5;
+      border: none;
+      color: white;
+      border-radius: 4px;
+      min-width: 100px;
+    }
+
+    .entrada {
+      color: var(--entrada);
+      font-weight: bold;
+    }
+
+    .saida {
+      color: var(--saida);
+      font-weight: bold;
+    }
+
+    .botao-remover {
+      background: #c62828;
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      color: white;
+    }
+
+    @media (max-width: 600px) {
+      th, td {
+        font-size: 14px;
+        padding: 6px;
+      }
+
+      input, select, button {
+        font-size: 14px;
+      }
+
+      .form-row, .filtros {
+        flex-direction: column;
+      }
+
+      .form-row > *, .filtros > * {
+        flex: 1 1 100%;
+      }
+    }
+
+    /* Status pago styles */
+    .pago-sim { color: #00e676; font-weight: bold; }
+    .pago-nao { color: #ff5252; font-weight: bold; }
+    .pago-ignorar { color: #888; font-style: italic; }
+  </style>
+</head>
+<body>
+
+  <h1>Livro de Finanças</h1>
+
+  <div class="filtros">
+    <select id="filtroMes">
+      <option value="01">Janeiro</option>
+      <option value="02">Fevereiro</option>
+      <option value="03">Março</option>
+      <option value="04">Abril</option>
+      <option value="05">Maio</option>
+      <option value="06">Junho</option>
+      <option value="07">Julho</option>
+      <option value="08">Agosto</option>
+      <option value="09">Setembro</option>
+      <option value="10">Outubro</option>
+      <option value="11">Novembro</option>
+      <option value="12">Dezembro</option>
+    </select>
+    <input type="number" id="filtroAno" placeholder="Ano" min="1900" max="2100" />
+    <button onclick="carregarLancamentos()">Carregar Mês</button>
+  </div>
+
+  <div class="form-row">
+    <input type="date" id="data" />
+    <input type="text" id="descricao" placeholder="Descrição" />
+    <select id="tipo">
+      <option value="entrada">Entrada</option>
+      <option value="saida">Saída</option>
+    </select>
+    <input type="number" id="valor" placeholder="Valor" step="0.01" />
+    <select id="pago">
+      <option value="sim">Pago</option>
+      <option value="nao">Não Pago</option>
+      <option value="ignorar">***</option>
+    </select>
+    <button onclick="adicionarLancamento()">Adicionar</button>
+  </div>
+
+  <table id="livroCaixa">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Descrição</th>
+        <th>Tipo</th>
+        <th>Valor (R$)</th>
+        <th>Pago?</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4">Total de Entradas</td>
+        <td id="totalEntradas">R$ 0,00</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td colspan="4">Total de Saídas</td>
+        <td id="totalSaidas">R$ 0,00</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td colspan="4">Saldo</td>
+        <td id="saldoFinal">R$ 0,00</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <script>
+    // Sua config Firebase (Realtime Database)
+    const firebaseConfig = {
+      apiKey: "AIzaSyAKjavNwXaaNigtooZFaPF7-FyWg7qzGeI",
+      authDomain: "livro-de-financas.firebaseapp.com",
+      databaseURL: "https://livro-de-financas-default-rtdb.firebaseio.com",
+      projectId: "livro-de-financas",
+      storageBucket: "livro-de-financas.firebasestorage.app",
+      messagingSenderId: "915101729753",
+      appId: "1:915101729753:web:64b61b3ff4cae9d8590fc8"
+    };
+
+    // Inicializa Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const tbody = document.querySelector("#livroCaixa tbody");
+    const totalEntradasEl = document.getElementById("totalEntradas");
+    const totalSaidasEl = document.getElementById("totalSaidas");
+    const saldoFinalEl = document.getElementById("saldoFinal");
+
+    const filtroMesEl = document.getElementById("filtroMes");
+    const filtroAnoEl = document.getElementById("filtroAno");
+
+    let lancamentos = {};
+    let chaveAtual = "";
+
+    function formatar(valor) {
+      return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function chaveMes() {
+      const mes = filtroMesEl.value;
+      const ano = filtroAnoEl.value;
+      return `${ano}-${mes}`;
+    }
+
+    async function carregarLancamentos() {
+      chaveAtual = chaveMes();
+      if (!filtroAnoEl.value) {
+        alert("Informe o ano para carregar.");
+        return;
+      }
+      const ref = db.ref(`livroCaixa/${chaveAtual}`);
+      const snapshot = await ref.once('value');
+      lancamentos = snapshot.val() || {};
+      renderizarTabela();
+    }
+
+    async function adicionarLancamento() {
+      const data = document.getElementById("data").value;
+      const descricao = document.getElementById("descricao").value.trim();
+      const tipo = document.getElementById("tipo").value;
+      const valor = parseFloat(document.getElementById("valor").value);
+      const pago = document.getElementById("pago").value;
+
+      if (!data || !descricao || isNaN(valor)) {
+        alert("Preencha todos os campos corretamente.");
+        return;
+      }
+
+      // Cria um novo lançamento com uma key automática
+      const ref = db.ref(`livroCaixa/${chaveAtual}`);
+      const novoRef = ref.push();
+
+      const lancamento = { data, descricao, tipo, valor, pago };
+
+      await novoRef.set(lancamento);
+      carregarLancamentos();
+
+      // Limpar campos
+      document.getElementById("data").value = "";
+      document.getElementById("descricao").value = "";
+      document.getElementById("valor").value = "";
+      document.getElementById("pago").value = "sim";
+    }
+
+    async function removerLancamento(key) {
+      if (!confirm("Deseja realmente remover este lançamento?")) return;
+      const ref = db.ref(`livroCaixa/${chaveAtual}/${key}`);
+      await ref.remove();
+      carregarLancamentos();
+    }
+
+    async function togglePago(key) {
+      const lanc = lancamentos[key];
+      if (!lanc) return;
+
+      if (lanc.pago === "sim") lanc.pago = "nao";
+      else if (lanc.pago === "nao") lanc.pago = "sim";
+      else return; // ignora ***
+
+      const ref = db.ref(`livroCaixa/${chaveAtual}/${key}`);
+      await ref.update({ pago: lanc.pago });
+      carregarLancamentos();
+    }
+
+    function renderizarTabela() {
+      tbody.innerHTML = "";
+      let totalEntradas = 0;
+      let totalSaidas = 0;
+
+      // Convertendo objeto para array para ordenar
+      const arr = Object.entries(lancamentos).map(([key, val]) => ({ key, ...val }));
+      arr.sort((a, b) => new Date(a.data) - new Date(b.data));
+
+      arr.forEach(l => {
+        const linha = document.createElement("tr");
+        linha.innerHTML = `
+          <td>${l.data}</td>
+          <td>${l.descricao}</td>
+          <td class="${l.tipo === 'entrada' ? 'entrada' : 'saida'}">${l.tipo.charAt(0).toUpperCase() + l.tipo.slice(1)}</td>
+          <td class="${l.tipo === 'entrada' ? 'entrada' : 'saida'}">${formatar(l.valor)}</td>
+          <td class="${l.pago === 'sim' ? 'pago-sim' : l.pago === 'nao' ? 'pago-nao' : 'pago-ignorar'}">
+            ${l.pago === 'ignorar' ? '***' : l.pago === 'sim' ? 'Sim' : 'Não'}
+            ${l.pago !== 'ignorar' ? `<button onclick="togglePago('${l.key}')" style="margin-left:6px;">🔁</button>` : ''}
+          </td>
+          <td><button class="botao-remover" onclick="removerLancamento('${l.key}')">🗑️</button></td>
+        `;
+        tbody.appendChild(linha);
+
+        if (l.tipo === "entrada" && l.pago !== "ignorar") totalEntradas += l.valor;
+        else if (l.tipo === "saida" && l.pago !== "ignorar") totalSaidas += l.valor;
+      });
+
+      totalEntradasEl.textContent = formatar(totalEntradas);
+      totalSaidasEl.textContent = formatar(totalSaidas);
+      saldoFinalEl.textContent = formatar(totalEntradas - totalSaidas);
+    }
+
+    // Define mês e ano padrão para hoje
+    window.onload = () => {
+      const hoje = new Date();
+      filtroMesEl.value = String(hoje.getMonth() + 1).padStart(2, "0");
+      filtroAnoEl.value = hoje.getFullYear();
+      carregarLancamentos();
+    };
+  </script>
+
+</body>
+</html>
