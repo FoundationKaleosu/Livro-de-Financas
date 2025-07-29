@@ -1,106 +1,130 @@
-<!-- SEU CÓDIGO COMPLETO, INCLUINDO A ADAPTAÇÃO PARA CELULAR -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <title>Livro de Finanças - Firebase</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #121212;
-      --fg: #ffffff;
+      --fg: #f5f5f5;
       --table-bg: #1e1e1e;
       --border: #333;
-      --entrada: #00e676;
-      --saida: #ff5252;
-      --highlight: #292929;
-      --btn-toggle-bg: #444;
-      --btn-remove-bg: #c62828;
+      --entrada: #81c784;
+      --saida: #e57373;
+      --highlight: #2c2c2c;
+      --btn-toggle-bg: #757575;
+      --btn-remove-bg: #d32f2f;
     }
+
     body {
       background-color: var(--bg);
       color: var(--fg);
-      font-family: Arial, sans-serif;
+      font-family: 'Inter', sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: 20px 10px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-height: 100vh;
-      box-sizing: border-box;
     }
+
     h1 {
-      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
       margin-bottom: 20px;
+      text-align: center;
     }
+
     .container {
+      background: var(--table-bg);
       width: 100%;
-      max-width: 600px;
+      max-width: 1000px;
+      padding: 20px;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+      border-radius: 8px;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
       background: var(--table-bg);
-      margin-bottom: 20px;
-      word-break: break-word;
+      margin-top: 20px;
     }
+
     th, td {
       border: 1px solid var(--border);
-      padding: 10px;
+      padding: 10px 12px;
       text-align: left;
+      font-size: 14px;
     }
+
     th {
       background: var(--highlight);
     }
+
     tfoot td {
       font-weight: bold;
       background: var(--highlight);
     }
+
     input, select {
       width: 100%;
-      padding: 8px;
-      border: none;
-      border-radius: 4px;
-      background: #2c2c2c;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      background: #2a2a2a;
       color: var(--fg);
       box-sizing: border-box;
     }
+
     .form-row, .filtros {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
+
     .form-row > *, .filtros > * {
-      flex: 1 1 140px;
+      flex: 1;
+      min-width: 140px;
     }
+
     button {
-      padding: 10px;
-      cursor: pointer;
-      background-color: #00bfa5;
-      border: none;
+      padding: 10px 16px;
+      font-size: 14px;
+      background-color: #0288d1;
       color: white;
-      border-radius: 4px;
-      min-width: 100px;
-      box-sizing: border-box;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
     }
+
+    button:hover {
+      background-color: #0277bd;
+    }
+
     .entrada {
       color: var(--entrada);
-      font-weight: bold;
+      font-weight: 600;
     }
+
     .saida {
       color: var(--saida);
-      font-weight: bold;
+      font-weight: 600;
     }
+
     .botao-remover {
       background: var(--btn-remove-bg);
-      padding: 6px 10px;
       border-radius: 4px;
+      padding: 6px 10px;
+      color: white;
       border: none;
       cursor: pointer;
-      color: white;
-      font-size: 14px;
     }
+
     .botao-toggle-pago {
       background: var(--btn-toggle-bg);
       padding: 6px 10px;
@@ -108,65 +132,64 @@
       border: none;
       cursor: pointer;
       color: white;
-      font-size: 14px;
-      margin-left: 5px;
+      margin-left: 6px;
     }
+
     .pago-sim {
-      color: #4caf50;
-      font-weight: bold;
+      color: #81c784;
+      font-weight: 600;
     }
+
     .pago-nao {
-      color: #f44336;
-      font-weight: bold;
+      color: #ef5350;
+      font-weight: 600;
     }
+
     .pago-ignorar {
-      color: #999999;
-      font-weight: bold;
+      color: #9e9e9e;
+      font-weight: 600;
     }
-    @media (max-width: 600px) {
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 24px;
+      }
+
       th, td {
-        font-size: 14px;
-        padding: 6px;
+        font-size: 13px;
+        padding: 8px;
       }
-      input, select, button {
-        font-size: 14px;
-      }
+
       .form-row, .filtros {
         flex-direction: column;
       }
-      .form-row > *, .filtros > * {
-        flex: 1 1 100%;
-      }
-      body {
-        padding: 10px;
-      }
+
       .container {
-        width: 100%;
+        padding: 20px 10px;
       }
-      table, thead, tbody, th, td, tr {
-        display: block;
+
+      button {
+        font-size: 13px;
       }
-      thead {
-        display: none;
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 20px;
       }
-      tr {
-        margin-bottom: 15px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 10px;
-        background-color: var(--table-bg);
+
+      input, select, button {
+        font-size: 13px;
+        padding: 8px;
       }
-      td {
-        padding: 6px 10px;
-        text-align: left;
-        position: relative;
+
+      .botao-remover, .botao-toggle-pago {
+        font-size: 12px;
+        padding: 4px 8px;
       }
-      td::before {
-        content: attr(data-label);
-        font-weight: bold;
-        display: block;
-        color: var(--fg);
-        margin-bottom: 4px;
+
+      table {
+        font-size: 12px;
       }
     }
   </style>
@@ -176,7 +199,7 @@
     <h1>Livro de Finanças</h1>
 
     <div class="filtros">
-      <select id="filtroMes" aria-label="Selecionar mês">
+      <select id="filtroMes">
         <option value="01">Janeiro</option>
         <option value="02">Fevereiro</option>
         <option value="03">Março</option>
@@ -190,19 +213,19 @@
         <option value="11">Novembro</option>
         <option value="12">Dezembro</option>
       </select>
-      <input type="number" id="filtroAno" placeholder="Ano" min="1900" max="2100" aria-label="Selecionar ano" />
+      <input type="number" id="filtroAno" placeholder="Ano" min="1900" max="2100" />
       <button onclick="carregarLancamentos()">Carregar Mês</button>
     </div>
 
     <div class="form-row">
-      <input type="date" id="data" aria-label="Data do lançamento" />
-      <input type="text" id="descricao" placeholder="Descrição" aria-label="Descrição do lançamento" />
-      <select id="tipo" aria-label="Tipo do lançamento">
+      <input type="date" id="data" />
+      <input type="text" id="descricao" placeholder="Descrição" />
+      <select id="tipo">
         <option value="entrada">Entrada</option>
         <option value="saida">Saída</option>
       </select>
-      <input type="number" id="valor" placeholder="Valor" step="0.01" aria-label="Valor do lançamento" />
-      <select id="pago" aria-label="Status do pagamento">
+      <input type="number" id="valor" placeholder="Valor" step="0.01" />
+      <select id="pago">
         <option value="sim">Pago</option>
         <option value="nao">Não Pago</option>
         <option value="***">***</option>
@@ -210,7 +233,7 @@
       <button onclick="adicionarLancamento()">Adicionar</button>
     </div>
 
-    <table id="livroCaixa" aria-label="Tabela de lançamentos financeiros">
+    <table id="livroCaixa">
       <thead>
         <tr>
           <th>Data</th>
@@ -249,7 +272,7 @@
       authDomain: "livro-de-financas.firebaseapp.com",
       databaseURL: "https://livro-de-financas-default-rtdb.firebaseio.com",
       projectId: "livro-de-financas",
-      storageBucket: "livro-de-financas.firebasestorage.app",
+      storageBucket: "livro-de-financas.appspot.com",
       messagingSenderId: "915101729753",
       appId: "1:915101729753:web:64b61b3ff4cae9d8590fc8"
     };
@@ -359,15 +382,15 @@
 
         const linha = document.createElement("tr");
         linha.innerHTML = `
-          <td data-label="Data">${l.data}</td>
-          <td data-label="Descrição">${l.descricao}</td>
-          <td data-label="Tipo" class="${l.tipo === 'entrada' ? 'entrada' : 'saida'}">${l.tipo.charAt(0).toUpperCase() + l.tipo.slice(1)}</td>
-          <td data-label="Valor (R$)" class="${l.tipo === 'entrada' ? 'entrada' : 'saida'}">${formatar(valorNum)}</td>
-          <td data-label="Pago" class="${l.pago === 'sim' ? 'pago-sim' : l.pago === 'nao' ? 'pago-nao' : 'pago-ignorar'}">
+          <td>${l.data}</td>
+          <td>${l.descricao}</td>
+          <td class="${l.tipo === 'entrada' ? 'entrada' : 'saida'}">${l.tipo.charAt(0).toUpperCase() + l.tipo.slice(1)}</td>
+          <td class="${l.tipo === 'entrada' ? 'entrada' : 'saida'}">${formatar(valorNum)}</td>
+          <td class="${l.pago === 'sim' ? 'pago-sim' : l.pago === 'nao' ? 'pago-nao' : 'pago-ignorar'}">
             ${l.pago === '***' ? '***' : l.pago === 'sim' ? 'Sim' : 'Não'}
-            ${l.pago !== '***' ? `<button class="botao-toggle-pago" aria-label="Alternar pago/não pago" onclick="togglePago('${l.key}')">🔁</button>` : ''}
+            ${l.pago !== '***' ? `<button class="botao-toggle-pago" onclick="togglePago('${l.key}')">Trocar</button>` : ''}
           </td>
-          <td data-label="Ações"><button class="botao-remover" aria-label="Remover lançamento" onclick="removerLancamento('${l.key}')">🗑️</button></td>
+          <td><button class="botao-remover" onclick="removerLancamento('${l.key}')">Delete</button></td>
         `;
         tbody.appendChild(linha);
 
