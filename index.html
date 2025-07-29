@@ -297,6 +297,7 @@
       <div><strong>Total de Entradas:</strong> <span id="totalEntradas">R$ 0,00</span></div>
       <div><strong>Total de Saídas:</strong> <span id="totalSaidas">R$ 0,00</span></div>
       <div><strong>Saldo:</strong> <span id="saldoFinal">R$ 0,00</span></div>
+      <div><strong>Saldo Devedor:</strong> <span id="saldoDevedor">R$ 0,00</span></div>
     </div>
   </div>
 
@@ -322,6 +323,7 @@
     const totalEntradasEl = document.getElementById("totalEntradas");
     const totalSaidasEl = document.getElementById("totalSaidas");
     const saldoFinalEl = document.getElementById("saldoFinal");
+    const saldoDevedorEl = document.getElementById("saldoDevedor");
 
     const filtroMesEl = document.getElementById("filtroMes");
     const filtroAnoEl = document.getElementById("filtroAno");
@@ -367,34 +369,39 @@
       const data = document.getElementById("data").value;
       const descricao = document.getElementById("descricao").value.trim();
       const tipo = document.getElementById("tipo").value;
-      const valor = parseFloat(document.getElementById("valor").value);
+      const valorStr = document.getElementById("valor").value;
       const pago = document.getElementById("pago").value;
 
-      if (!data || !descricao || !tipo || isNaN(valor)) {
+      if (!data || !descricao || !valorStr) {
         alert("Preencha todos os campos corretamente.");
         return;
       }
 
-      const chave = chaveMes();
-      if (!chave) {
-        alert("Selecione mês e ano válidos no filtro para adicionar.");
+      const valor = parseFloat(valorStr);
+      if (isNaN(valor) || valor <= 0) {
+        alert("Informe um valor válido maior que zero.");
         return;
       }
 
-      const id = Date.now().toString();
-      lancamentos[id] = { data, descricao, tipo, valor, pago };
+      const key = Date.now().toString();
+
+      lancamentos[key] = { data, descricao, tipo, valor, pago };
       salvarLancamentos();
       renderizarTabela();
 
+      // limpa os campos
+      document.getElementById("data").value = "";
       document.getElementById("descricao").value = "";
       document.getElementById("valor").value = "";
+      document.getElementById("pago").value = "sim";
     }
 
     function removerLancamento(key) {
-      if (!confirm("Deseja remover este lançamento?")) return;
-      delete lancamentos[key];
-      salvarLancamentos();
-      renderizarTabela();
+      if (confirm("Deseja realmente remover este lançamento?")) {
+        delete lancamentos[key];
+        salvarLancamentos();
+        renderizarTabela();
+      }
     }
 
     function togglePago(key) {
@@ -410,6 +417,7 @@
       tbody.innerHTML = "";
       let totalEntradas = 0;
       let totalSaidas = 0;
+      let saldoDevedor = 0;
 
       const arr = Object.entries(lancamentos).map(([key, val]) => ({ key, ...val }));
       arr.sort((a, b) => new Date(a.data) - new Date(b.data));
@@ -436,17 +444,28 @@
           if (l.tipo === "entrada") totalEntradas += valorNum;
           else if (l.tipo === "saida") totalSaidas += valorNum;
         }
+
+        // Soma saldo devedor: saída que não está paga
+        if (l.tipo === "saida" && l.pago === "nao") {
+          saldoDevedor += valorNum;
+        }
       });
 
       totalEntradasEl.textContent = formatar(totalEntradas);
       totalSaidasEl.textContent = formatar(totalSaidas);
       saldoFinalEl.textContent = formatar(totalEntradas - totalSaidas);
+      saldoDevedorEl.textContent = formatar(saldoDevedor);
     }
 
-    const hoje = new Date();
-    filtroMesEl.value = (hoje.getMonth() + 1).toString().padStart(2, "0");
-    filtroAnoEl.value = hoje.getFullYear();
-    carregarLancamentos();
+    // Preenche filtro com mês e ano atual
+    (function preencherFiltroAtual() {
+      const hoje = new Date();
+      let mes = (hoje.getMonth() + 1).toString().padStart(2, "0");
+      let ano = hoje.getFullYear();
+      filtroMesEl.value = mes;
+      filtroAnoEl.value = ano;
+      carregarLancamentos();
+    })();
   </script>
 </body>
 </html>
