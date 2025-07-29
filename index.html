@@ -385,85 +385,75 @@
       document.getElementById("data").value = "";
       document.getElementById("descricao").value = "";
       document.getElementById("valor").value = "";
-      document.getElementById("pago").value = "sim";
-    }
+}
+function removerLancamento(id) {
+  delete lancamentos[id];
+  salvarLancamentos();
+  renderizarTabela();
+}
 
-    function removerLancamento(id) {
-      if (!confirm("Confirma remover este lançamento?")) return;
-      delete lancamentos[id];
-      salvarLancamentos();
-      renderizarTabela();
-    }
+function togglePago(id) {
+  const l = lancamentos[id];
+  l.pago = l.pago === "sim" ? "nao" : "sim";
+  salvarLancamentos();
+  renderizarTabela();
+}
 
-    function togglePago(id) {
-      if (!lancamentos[id]) return;
-      lancamentos[id].pago = lancamentos[id].pago === "sim" ? "nao" : "sim";
-      salvarLancamentos();
-      renderizarTabela();
-    }
+function renderizarTabela() {
+  tbody.innerHTML = "";
 
-    function renderizarTabela() {
-      tbody.innerHTML = "";
-      let totalEntradas = 0;
-      let totalSaidas = 0;
-      let saldoDevedor = 0;
+  const lancamentosArray = Object.entries(lancamentos).map(([id, l]) => ({ id, ...l }));
+  lancamentosArray.sort((a, b) => new Date(a.data) - new Date(b.data));
 
-      // Transformar o objeto em array para ordenar
-      const lancamentosArray = Object.entries(lancamentos)
-        .map(([id, l]) => ({ id, ...l }))
-        .sort((a, b) => new Date(a.data) - new Date(b.data)); // ordem crescente por data
+  let totalEntradas = 0;
+  let totalSaidas = 0;
+  let saldoDevedor = 0;
 
-      for (const l of lancamentosArray) {
-        const valorNum = parseFloat(l.valor);
+  lancamentosArray.forEach(l => {
+    const tr = document.createElement("tr");
 
-        const tr = document.createElement("tr");
+    const [ano, mes, dia] = l.data.split("-");
+    const dataLocal = new Date(ano, mes - 1, dia);
+    const dataFormatada = dataLocal.toLocaleDateString("pt-BR");
 
-        // Data formatada: dd/mm/yyyy
-        const dataFormatada = new Date(l.data).toLocaleDateString('pt-BR');
+    tr.innerHTML = `
+      <td>${dataFormatada}</td>
+      <td>${l.descricao}</td>
+      <td class="${l.tipo}">${l.tipo === "entrada" ? "Entrada" : "Saída"}</td>
+      <td>${formatar(parseFloat(l.valor))}</td>
+      <td class="${l.pago === "sim" ? "pago-sim" : "pago-nao"}">
+        ${l.pago === "sim" ? "Sim" : "Não"}
+        <button class="botao-toggle-pago" onclick="togglePago('${l.id}')">Alterar</button>
+      </td>
+      <td><button class="botao-remover" onclick="removerLancamento('${l.id}')">Remover</button></td>
+    `;
 
-        tr.innerHTML = `
-          <td>${dataFormatada}</td>
-          <td>${l.descricao}</td>
-          <td class="${l.tipo === 'entrada' ? 'entrada' : 'saida'}">${l.tipo === 'entrada' ? 'Entrada' : 'Saída'}</td>
-          <td>${formatar(valorNum)}</td>
-          <td class="${l.pago === 'sim' ? 'pago-sim' : 'pago-nao'}">
-            ${l.pago === 'sim' ? 'Pago' : 'Não Pago'}
-            <button class="botao-toggle-pago" onclick="togglePago('${l.id}')">Alternar</button>
-          </td>
-          <td>
-            <button class="botao-remover" onclick="removerLancamento('${l.id}')">Remover</button>
-          </td>
-        `;
+    tbody.appendChild(tr);
 
-        tbody.appendChild(tr);
-
-        // Somar entradas pagas
-        if (l.tipo === "entrada" && l.pago === "sim") {
-          totalEntradas += valorNum;
-        }
-
-        // Somar somente saídas pagas para totalSaidas
-        if (l.tipo === "saida" && l.pago === "sim") {
-          totalSaidas += valorNum;
-        }
-
-        // Somar saídas não pagas para saldo devedor
-        if (l.tipo === "saida" && l.pago === "nao") {
-          saldoDevedor += valorNum;
-        }
+    if (l.pago === "sim") {
+      if (l.tipo === "entrada") {
+        totalEntradas += parseFloat(l.valor);
+      } else {
+        totalSaidas += parseFloat(l.valor);
       }
-
-      totalEntradasEl.textContent = formatar(totalEntradas);
-      totalSaidasEl.textContent = formatar(totalSaidas);
-      saldoFinalEl.textContent = formatar(totalEntradas - totalSaidas);
-      saldoDevedorEl.textContent = formatar(saldoDevedor);
+    } else if (l.tipo === "saida") {
+      saldoDevedor += parseFloat(l.valor);
     }
+  });
 
-    // Inicializar filtros com mês/ano atual
-    const hoje = new Date();
-    filtroMesEl.value = (hoje.getMonth() + 1).toString().padStart(2, '0');
-    filtroAnoEl.value = hoje.getFullYear();
-    carregarLancamentos();
-  </script>
+  const saldoFinal = totalEntradas - totalSaidas;
+  totalEntradasEl.textContent = formatar(totalEntradas);
+  totalSaidasEl.textContent = formatar(totalSaidas);
+  saldoFinalEl.textContent = formatar(saldoFinal);
+  saldoDevedorEl.textContent = formatar(saldoDevedor);
+}
+
+// Inicializar filtros com mês/ano atual
+const hoje = new Date();
+filtroMesEl.value = (hoje.getMonth() + 1).toString().padStart(2, '0');
+filtroAnoEl.value = hoje.getFullYear();
+carregarLancamentos();
+</script>
 </body>
 </html>
+
