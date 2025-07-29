@@ -145,11 +145,6 @@
       font-weight: 600;
     }
 
-    .pago-ignorar {
-      color: #999;
-      font-weight: 600;
-    }
-
     /* Container separado para totais */
     .totais-container {
       margin-top: 20px;
@@ -274,7 +269,6 @@
       <select id="pago">
         <option value="sim">Pago</option>
         <option value="nao">Não Pago</option>
-        <option value="***">***</option>
       </select>
       <button onclick="adicionarLancamento()">Adicionar</button>
     </div>
@@ -360,9 +354,7 @@
       const chave = chaveMes();
       if (!chave) return;
       const ref = db.ref("livroCaixa/" + chave);
-      ref.set(lancamentos).catch(err => {
-        alert("Erro ao salvar lançamento: " + err.message);
-      });
+      ref.set(lancamentos);
     }
 
     function adicionarLancamento() {
@@ -372,7 +364,7 @@
       const valorStr = document.getElementById("valor").value;
       const pago = document.getElementById("pago").value;
 
-      if (!data || !descricao || !valorStr) {
+      if (!data || !descricao || !tipo || !valorStr) {
         alert("Preencha todos os campos corretamente.");
         return;
       }
@@ -383,32 +375,42 @@
         return;
       }
 
+      const anoMes = data.slice(0, 7);
+      const filtroChave = chaveMes();
+      if (filtroChave !== anoMes) {
+        alert("Data deve estar dentro do mês e ano selecionados no filtro.");
+        return;
+      }
+
       const key = Date.now().toString();
 
-      lancamentos[key] = { data, descricao, tipo, valor, pago };
+      lancamentos[key] = {
+        data,
+        descricao,
+        tipo,
+        valor: valor.toFixed(2),
+        pago
+      };
+
       salvarLancamentos();
       renderizarTabela();
 
-      // limpa os campos
-      document.getElementById("data").value = "";
+      // Limpar campos após adicionar
       document.getElementById("descricao").value = "";
       document.getElementById("valor").value = "";
-      document.getElementById("pago").value = "sim";
+      document.getElementById("pago").value = "nao";
     }
 
     function removerLancamento(key) {
-      if (confirm("Deseja realmente remover este lançamento?")) {
-        delete lancamentos[key];
-        salvarLancamentos();
-        renderizarTabela();
-      }
+      if (!confirm("Deseja realmente remover este lançamento?")) return;
+      delete lancamentos[key];
+      salvarLancamentos();
+      renderizarTabela();
     }
 
     function togglePago(key) {
       if (!lancamentos[key]) return;
-      const atual = lancamentos[key].pago;
-      if (atual === "sim") lancamentos[key].pago = "nao";
-      else if (atual === "nao") lancamentos[key].pago = "sim";
+      lancamentos[key].pago = lancamentos[key].pago === "sim" ? "nao" : "sim";
       salvarLancamentos();
       renderizarTabela();
     }
@@ -432,20 +434,25 @@
           <td>${l.descricao}</td>
           <td class="${l.tipo === 'entrada' ? 'entrada' : 'saida'}">${l.tipo.charAt(0).toUpperCase() + l.tipo.slice(1)}</td>
           <td class="${l.tipo === 'entrada' ? 'entrada' : 'saida'}">${formatar(valorNum)}</td>
-          <td class="${l.pago === 'sim' ? 'pago-sim' : l.pago === 'nao' ? 'pago-nao' : 'pago-ignorar'}">
-            ${l.pago === '***' ? '***' : l.pago === 'sim' ? 'Sim' : 'Não'}
-            ${l.pago !== '***' ? `<button class="botao-toggle-pago" onclick="togglePago('${l.key}')">Trocar</button>` : ''}
+          <td class="${l.pago === 'sim' ? 'pago-sim' : 'pago-nao'}">
+            ${l.pago === 'sim' ? 'Pago' : 'Não Pago'}
+            <button class="botao-toggle-pago" onclick="togglePago('${l.key}')">Trocar</button>
           </td>
           <td><button class="botao-remover" onclick="removerLancamento('${l.key}')">Delete</button></td>
         `;
         tbody.appendChild(linha);
 
-        if (l.pago !== "***") {
-          if (l.tipo === "entrada") totalEntradas += valorNum;
-          else if (l.tipo === "saida") totalSaidas += valorNum;
+        // Somente entradas pagas contam para totalEntradas
+        if (l.tipo === "entrada" && l.pago === "sim") {
+          totalEntradas += valorNum;
         }
 
-        // Soma saldo devedor: saída que não está paga
+        // Saídas pagas e não pagas entram no totalSaidas
+        if (l.tipo === "saida") {
+          totalSaidas += valorNum;
+        }
+
+        // Saldo devedor = somar todas saídas NÃO pagas
         if (l.tipo === "saida" && l.pago === "nao") {
           saldoDevedor += valorNum;
         }
@@ -457,15 +464,15 @@
       saldoDevedorEl.textContent = formatar(saldoDevedor);
     }
 
-    // Preenche filtro com mês e ano atual
-    (function preencherFiltroAtual() {
+    // Inicializar filtro com data atual
+    (function initFiltro() {
       const hoje = new Date();
-      let mes = (hoje.getMonth() + 1).toString().padStart(2, "0");
-      let ano = hoje.getFullYear();
+      const mes = (hoje.getMonth() + 1).toString().padStart(2, "0");
+      const ano = hoje.getFullYear().toString();
       filtroMesEl.value = mes;
       filtroAnoEl.value = ano;
-      carregarLancamentos();
     })();
+
   </script>
 </body>
 </html>
